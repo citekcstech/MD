@@ -251,14 +251,27 @@ Chữ có 2 dấu (â, ê, ô, ă, ơ, ư + thanh) ở NFD tách thành: base + 
 // JavaScript
 const s = 'Vi\u1EC7t Nam';          // Việt Nam
 const t = 'Ti\u1EBFng Vi\u1EC7t';   // Tiếng Việt
+
+// Cùng chữ "Việt" nhưng 2 dạng khác nhau
+const a = 'Vi\u1EC7t';              // NFC: ệ = 1 ký tự (U+1EC7)
+const b = 'Vie\u0323\u0302t';       // NFD: ệ = e + dấu nặng + dấu mũ (3 ký tự)
+
+console.log(a === b);                                   // false
 // Chuẩn hoá về NFC trước khi so sánh
-a.normalize('NFC') === b.normalize('NFC');
+console.log(a.normalize('NFC') === b.normalize('NFC')); // true
 ```
 
 ```csharp
 // C#
+using System.Text;
+
 string s = "Vi\u1EC7t Nam";
-string nfc = input.Normalize(NormalizationForm.FormC);
+
+string a = "Vi\u1EC7t";             // NFC
+string b = "Vie\u0323\u0302t";      // NFD
+
+bool raw = (a == b);                // false
+bool nfc = a.Normalize(NormalizationForm.FormC) == b.Normalize(NormalizationForm.FormC); // true
 ```
 
 ## 7. Tra nhanh — dạng 1 dòng/nguyên âm
