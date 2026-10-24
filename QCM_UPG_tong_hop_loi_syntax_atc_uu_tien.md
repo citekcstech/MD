@@ -133,3 +133,10 @@ Sheet `Ưu tiên theo ST03N` và `Điểm vào ST03N` trong cùng file xlsx; ph�
 - File ST03N chính chỉ có đối tượng Z (không có giao dịch chuẩn SAP) nên BAdI/enhancement không đo được; kỳ quan sát ~2 tháng nên đối tượng chạy theo quý/năm có thể không xuất hiện – xác nhận với nghiệp vụ trước khi loại bỏ.
 - Sheet `Điểm vào ST03N` liệt kê 554 giao dịch/báo cáo/RFC Z kèm số object ATC liên quan; nhiều giao dịch chạy rất nhiều (ZRT149, ZRT116, ZRT191…) nhưng chương trình đích không có lỗi ATC.
 
+## Cột tcode
+
+Đã thêm cột tcode vào các sheet `Ưu tiên xử lý`, `Ưu tiên theo ST03N`, `Điểm vào ST03N`, `Lỗi syntax`, `Theo object`, `Chi tiết ATC` (mục 8 sheet `Tổng quan`).
+
+- Nguồn: `EXPORT_20261021_100735.xlsx` (500 giao dịch Z), `TSTCP.xlsx` (197 giao dịch tham số, 97 cái là `/*SM30 VIEWNAME=<bảng>`); bổ sung từ `TCODE_TSTC` của ExtractSAP (912 tcode, chứa đủ 500 tcode của EXPORT, chương trình trùng 100%).
+- **Tcode (trực tiếp)**: tcode chạy chương trình/nhóm hàm chứa object, hoặc bảo trì bảng/view qua SM30. **Tcode (gián tiếp)**: tcode đi tới object qua chuỗi gọi (tối đa 4 cấp), hiển thị số lượng và 5 tcode đầu.
+- Phủ: 331/799 object có tcode trực tiếp (PROG 314/386, TABL 12/171, SSFO 5/8), 170 chỉ có tcode gián tiếp, 298 không có (class, enhancement, include/chương trình chỉ chạy bằng job).
