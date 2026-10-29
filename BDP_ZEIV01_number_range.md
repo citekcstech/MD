@@ -57,7 +57,9 @@ Ghi chú:
 
 ## Hướng dẫn tạo 3 Number Range object bằng SNRO
 
-Không có tool MCP nào tạo được Number Range object hay interval, nên làm tay trong SAP GUI. Việc này ghi lên SAP → cần user thực hiện hoặc đồng ý trước.
+**Kết quả thử tạo qua MCP (29.10.2026): không tạo được, chưa có gì được ghi lên DEV100.** Không có tool MCP riêng cho Number Range. Đã thử đường `ExecuteABAP` gọi FM chuẩn (`NUMBER_RANGE_OBJECT_UPDATE` → `NUMBER_RANGE_OBJECT_CLOSE` → `NUMBER_RANGE_INTERVAL_UPDATE` → `NUMBER_RANGE_UPDATE_CLOSE`): kiểm thuộc tính `ZSKL` ở mức `harmless` (không ghi DB) qua được (`subrc=0`, không lỗi), nhưng mức `dangerous` và `critical` không chạy test nào (0.000 s, không trả kết quả, kể cả đoạn `ping` không ghi gì). Đã đọc lại `TNRO`, `TNROT`, `NRIV` của `ZSKL`: rỗng. Vì vậy phải tạo tay trong SNRO.
+
+Đã chốt với user (29.10.2026): dùng đúng thông số đề xuất ở Bước 1, gắn vào Workbench TR **`DEVK900867`** (package `ZPK_BDP`). Khi SNRO hiện popup chọn TR, chọn `DEVK900867`.
 
 ### Bước 0 — Xem hệ đang có sẵn object (nếu có)
 
