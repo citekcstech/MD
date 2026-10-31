@@ -14,7 +14,7 @@ FS đối chiếu: **chỉ** `FS/BIDIPHAR_FS_SD_ZPRO_ChucNangKhuyenMaiTangHang_V
 | 64 | Description SO type/item cat | Không tái hiện được trên DEV200 |
 | 44 | ZK01/ZK02 "ăn vào amount" | Xung đột yêu cầu / cấu hình (chưa có trong FS) |
 | 65 | Duyệt xong sinh Condition Contract | Đã xác định: code là khung rỗng; thông tin field nằm trong ảnh FS |
-| 66 | Pop-up mọi chương trình thoả | Logic đã có; khác FS docx ở điều kiện hiện pop-up |
+| 66 | Pop-up mọi chương trình thoả | **Đã sửa 31.10.2026 22:43 (DEV, TR DEVK900211/task 900212)** — cần test VA01/VA02 và BA xác nhận |
 | 69 | Nút "Kiểm tra quan hệ" | Code + dữ liệu test đều có; chưa rõ vì sao user thấy "không dùng được" |
 | 54 | Condition Value pop-up không bắt giá trị | Chưa tái hiện; có 1 ứng viên nguyên nhân (Z2 điều kiện 04) |
 
@@ -65,6 +65,8 @@ FS đối chiếu: **chỉ** `FS/BIDIPHAR_FS_SD_ZPRO_ChucNangKhuyenMaiTangHang_V
 - **Điều kiện hiện pop-up**: `ZCL_PRO_PICK=>RUN`: `iv_popup = true AND line_exists( gt_prog[ manual = true ] )` → **chỉ hiện khi có ít nhất 1 chương trình Manual**. Toàn Auto thì không hiện pop-up, chỉ báo "Đã áp dụng N dòng chương trình" (đúng ảnh sheet 66).
 - FS docx (Trường hợp 2.1/2.2): tất cả Option Auto → hệ thống tự áp dụng (không popup); tất cả Manual → popup. Nghĩa là code hiện tại khớp docx; yêu cầu STT 66 (pop-up luôn hiện, kể cả Auto) là thay đổi so với docx — có thể theo FS V2.0 / demo VA02 v2.2 (comment code 21/10 trích "demo VA02 v2.2").
 - Ngoài ra docx (Z1 Manual) ghi Condition Header cho loại chiết khấu tiền, còn code (22/10) ghi Item theo "FS mới trang 82/111" → hai bản FS khác nhau.
+- **ĐÃ SỬA (31.10.2026 22:43:13, qua `GUI_BIDIPHAR_DEV100`)**: `ZCL_PRO_PICK=>RUN` — điều kiện `IF iv_popup = abap_true AND line_exists( gt_prog[ manual = abap_true ] )` đổi thành `IF iv_popup = abap_true` (dòng cũ comment lại, marker `SangVT comment/add begin/end`). Class đã activate, object nằm trong TR DEVK900211 (task DEVK900212). Hiệu lực cho cả client 100 và 200 (cùng hệ DEV).
+- **Hành vi mới cần test (VA01/VA02 → nút Apply)**: luôn hiện pop-up liệt kê chương trình thoả, kể cả khi chỉ có Auto (ô khoá, tick sẵn), rồi popup xác nhận "Áp dụng các chương trình đã chọn lên đơn hàng?" (Áp dụng / Chọn lại / Cancel) → mỗi lần Apply có 2 hộp thoại. Nếu BA không muốn hiện popup xác nhận khi toàn Auto thì cần chỉnh thêm. Muốn hoàn tác: khôi phục dòng đã comment và xoá khối `SangVT add`.
 
 ### STT 69 — Nút "Kiểm tra quan hệ"
 - `BT_CHKREL` (screen 0200 của ZSD_PG_PROMOTION): `WHEN 'CHKREL'` (I01 ~556) → `FORM CHECK_PRO_RELATION` (F01 ~3654, thêm 19.10.2026). Hiện popup ALV các chương trình còn hiệu lực (Valid From–To giao với chương trình đang xem) có quan hệ Include/Exclude, đối chiếu hai chiều trong `ZTB_PRO_LINKPRO`; mức Header. **Khớp FS** mô tả nút (Change & Display).

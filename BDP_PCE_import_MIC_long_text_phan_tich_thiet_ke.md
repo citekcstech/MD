@@ -113,3 +113,75 @@ Report `PROG/P` đơn (không dùng include – bug ghi `PROG/I` qua MCP), cấu
 
 - Chưa chạy ATC; chưa tạo Tcode (MCP không tạo được TRAN, tạo trong SE93 nếu cần).
 - Chưa commit git (sửa `.claude/skills/**` cần commit: `_ghichu_mcp_gui.md`, `_ghichu_local.md`).
+
+## 9. Yêu cầu bổ sung (bạn Huyền, 01.11.2026): gắn formula cho MIC có Char. 79xx
+
+Yêu cầu: với MIC có số Char. 79xx → (1) vào Control Indicators chọn "Calculated characteristic"; (2) ô Formula hiện ra, nhập công thức, back, save. Dự kiến thêm **cột J "Formula"** vào template.
+
+**Kết luận: làm được, dùng chính `BAPI_INSPECTIONPLAN_CHANGE` đang dùng cho long text (không cần BDC).** Chưa test ghi thật.
+
+| Thao tác trên QP02 | Trường BAPI (`INSPECTION_CHARACTERISTICS` + `_X`) | PLMK |
+|---|---|---|
+| Control Indicators → Calculated Characteristic (QKZFORMEL) | `FORMULA_IND = 'X'` | `STEUERKZ` vị trí 15 = `X` |
+| Tab Quantitative Data → Calculate Formula (QFORMELSL "Check and Calculate Formula in QM") | `FORMULA_CHECK_BY_SAP = 'X'` | `FORMELSL = 'X'` |
+| Ô Formula | `FORMULA_FIELD_1` (+ `FORMULA_FIELD_2`), mỗi ô CHAR 60 | `FORMEL1`, `FORMEL2` |
+
+Bằng chứng từ data DEV300 (đọc, không ghi):
+- Có đúng **13 dòng `PLMK` đã có formula**, đều là Char. 7901 / MIC `ZAPI`, `FORMELSL = X`, `STEUERKZ` vị trí 15 = `X` (khác các dòng không formula đúng ở vị trí này). 13 dòng này trùng khớp 13 dòng Char. 7901 trong Excel (13 plan: B2100283, B2100414, B2100417, B2100549, B2100563 ×2, B2100571 ×3, B2100644, B2100904, B2101070, B2101841).
+- Dạng công thức đang dùng: `C07001`; `C07001 * ( 100 - C07101 ) / 100`; `( C07001 * ( 100 - C07101 ) / 100 ) * ( 677.185 / 623.139 )`. Cú pháp tham chiếu: `C0` + số Char. 4 chữ số trong cùng operation (`C07001` = Char. 7001, `C07101` = Char. 7101 độ ẩm).
+- Excel có 13 dòng Char. 7001 và 9 dòng Char. 7101; 12/13 dòng 7901 có long text trống.
+- Plan `A2100277` (màn hình bạn gửi): Char. 7901 chưa có formula, `QPMK_REF` rỗng (không by-reference) → dùng làm plan test.
+
+Thiết kế đề xuất (chưa làm, chờ user đồng ý):
+- Cột J "Formula" tùy chọn; không có cột → chương trình chạy như cũ.
+- Mỗi dòng có 2 phần độc lập (long text, formula); bỏ quy tắc "long text trống → bỏ qua cả dòng" (dòng chỉ có formula vẫn xử lý).
+- Cùng 1 lần gọi BAPI / plan: thêm dòng `MAINTAIN_MODE = 'M'` vào `INSPECTION_CHARACTERISTICS` (+ `_X`, `FLAG_BAR_POINTER`).
+- Kiểm tra: ô > 60 ký tự → tách sang `FORMULA_FIELD_2` (tối đa 120); các `Cnnnnn` phải tồn tại cùng operation; đã có formula: giống → bỏ qua, khác → chỉ ghi đè khi tick Overwrite.
+- Rủi ro cần test bằng SAP GUI ở DEV300: BAPI mode `M` có nhận chỉ các field formula không, có cần `OPERATION_ID`, `STEUERKZ` có tự cập nhật đúng không. DEV100 thiếu customizing QM (`TCA41`), DEV300 chặn `ExecuteABAP` → không test ghi được bằng MCP.
+
+## 10. File công thức Plant 1000 – tạm dừng chờ bổ sung cột (01.11.2026)
+
+File: `CodeABAP/BDP_PCE/MIC_Long_text/BDP_Plan1000_InspPlan_CongThuc.xlsx` – sheet `InspPlan_CongThuc`, header dòng 9, dữ liệu dòng 10–151 (**142 dòng**, 135 plan, 92 material).
+
+Header hiện có: `Material · Tên mã · Group · Group counter · Ngày hiệu lực · STT MIC · MIC · Công thức`. **Thiếu `Plant` và `Operation`** → user tạm dừng việc sửa `ZQM_PG_MIC_LONGTEXT`, sẽ bổ sung 2 cột này (chưa sửa chương trình, chưa ghi SAP).
+
+Đối chiếu với DEV300 (đọc, trước khi mất kết nối): `PLMK` plan `A%` có đúng 134 dòng Char. 7901/`ZAPI` + 1 dòng 7911/`ZAPI` + 5 dòng 7911/`ZAPI2` + 2 dòng 7902/`ZAPI2` = 142, khớp file; `MAPL` Plant 1000 có 557 plan `A%`; chưa có formula nào ở Plant 1000.
+
+Điểm cần user kiểm trong file:
+- Dòng 131 (A2100648 counter 02): formula `C7001` – nhiều khả năng gõ thiếu số 0, đúng dạng là `C07001`.
+- Dòng 87 (82 ký tự) và dòng 96 (68 ký tự) dài hơn 60 → phải tách `FORMEL1`/`FORMEL2`.
+- Char. không chỉ 7901: có 7911 (6 dòng) và 7902 (2 dòng); formula tham chiếu thêm `C07201`, `C07301`, `C07002`, `C07102`.
+- Một số dòng lệch khoảng trắng (dòng 42, 73, 140) – vô hại, chương trình sẽ gộp khoảng trắng.
+
+Thiết kế đã chốt hướng (làm khi file đủ cột): chế độ chọn bằng radio **Long text + Formula (mặc định) / Chỉ Long text / Chỉ Formula**; header nhận thêm `STT MIC` (= Char.) và `Công thức`/`Formula`; `Operation` nếu để trống thì suy ra từ SAP (báo lỗi nếu Char. nằm ở nhiều operation); kiểm formula: dạng `C` + 5 chữ số, Char. tham chiếu phải có trong cùng operation, ≤ 120 ký tự (tách tại dấu cách).
+
+## 11. Cập nhật 01.11.2026: file đủ cột, đã sửa chương trình (local)
+
+File dùng: `CodeABAP/BDP_PCE/MIC_Long_text/BDP_Plan1000_InspPlan_CongThuc 1.xlsx` – header dòng 9: `Material · Tên mã · Plant · Group · Group counter · Ngày hiệu lực · Operation · STT MIC · MIC · Công thức` (A–J), 142 dòng, Plant 1000, Operation 0010, key không trùng, công thức giống file trước. Vẫn còn dòng 131 `C7001` (chương trình sẽ báo lỗi dòng này) và 2 dòng > 60 ký tự (87, 96).
+
+`zqm_pg_mic_longtext.abap` (local, ~1.300 dòng) đã sửa:
+- Selection screen thêm 3 radio: **Long text + Formula** (mặc định) / **Chỉ Long text** / **Chỉ Formula**; ô Overwrite dùng chung cho long text và formula.
+- Header nhận thêm `STT MIC` (= Char.) và `Công thức`/`Formula`. `Operation` vẫn bắt buộc (file đã có cột). Bắt buộc thêm cột MIC long text (chế độ Chỉ Long text), Formula (Chỉ Formula) hoặc ít nhất 1 trong 2 (mặc định).
+- Mỗi dòng có 2 phần độc lập (long text: C/M/S/E, formula: F/S/E) và thông báo riêng; ALV thêm cột Formula (file), Formula hiện có, Formula - thao tác. Dòng chỉ có formula (long text trống) vẫn được xử lý.
+- Formula: chuẩn hoá (chữ hoa, gộp khoảng trắng); tham chiếu phải dạng `C` + 5 chữ số; Char. được tham chiếu phải có trong cùng operation; đã có formula giống file → bỏ qua, khác → chỉ ghi đè khi tick Overwrite. Ghi bằng `INSPECTION_CHARACTERISTICS` + `_X` (`FORMULA_IND`, `FORMULA_CHECK_BY_SAP`, `FORMULA_FIELD_1/2`), cùng lần gọi BAPI theo plan với long text.
+- Tách 2 ô: cắt tại dấu cách cuối cùng trong 61 ký tự đầu, `FORMEL2` mở đầu bằng 1 dấu cách (đúng với cả 2 cách SAP nối ô). Dòng 87: ô 1 = `IF ( C07001 / 693 < C07002 / 139 ) THEN C07001 / 693 * 100`, ô 2 = ` ELSE C07002 / 139 * 100`; dòng 96: ô 1 dài 60 ký tự, ô 2 = ` 546.7 )`.
+- Plan lỗi: gọi lại từng dòng, từng phần (long text / formula) để cô lập phần lỗi.
+
+Đã kiểm: abaplint không có lỗi parser mới (chỉ `7bit_ascii` do chữ có dấu); logic tách formula và tham chiếu chạy thử offline trên 142 dòng (chỉ dòng 131 sai dạng).
+
+**Đã đẩy lên SAP (01.11.2026, sau khi MCP kết nối lại)**: `UpdateObjectAtomic` trên DEV100 vào TR `DEVK901110` (Modifiable), active, 1.300 dòng, giống hệt file local (`ExportToFile` + diff, chỉ khác dấu xuống dòng cuối file); `DeployFromFile` qua được bước khoá + SyntaxCheck, lỗi 423 ở bước ghi như đã biết. Chạy thử trên DEV100 (`ExecuteABAP`, không ghi DB): tách formula dòng 87/96 đúng thiết kế, `C7001` bị báo sai dạng, header `Công thức` được nhận (`to_upper` ra `CÔNG THỨC`, `CP 'C*NG TH*C'` khớp).
+
+**Chưa test**: ghi thật ở DEV300 (cần SAP GUI) – chạy "Chạy thử" = X rồi ghi thật; kiểm `QP02` plan `A2100277` Char. 7901 (Calculated characteristic + ô Formula) và 2 dòng formula dài (87, 96); đọc xlsx thật bằng `cl_fdt_xl_spreadsheet`.
+
+## 12. Lỗi "Unable to load worksheet" (FDT_EXCEL_CORE005) – 01.11.2026
+
+Triệu chứng: chạy `ZQM_PG_MIC_LONGTEXT` ở DEV300 với `BDP_Plan1000_InspPlan_CongThuc 1.xlsx` → báo `Unable to load worksheet`.
+
+Nguyên nhân (tra source `CL_FDT_XL_SPREADSHEET`/`CL_FDT_DOC_PKG`, tái hiện bằng file xlsx dựng trong bộ nhớ trên DEV100): file do **openpyxl** tạo (ghi trong `docProps/core.xml`), khác file do Excel lưu (`BDP_Plan2000_...xlsx`):
+1. `xl/_rels/workbook.xml.rels` có `Target="/xl/worksheets/sheet1.xml"` (tuyệt đối) → class ghép `xl/` + đường dẫn này nên không tìm thấy sheet → `E005`.
+2. Mọi ô chuỗi là `t="inlineStr"`, gói không có `xl/sharedStrings.xml` → sau khi vá đường dẫn, sheet đọc được nhưng **tất cả ô rỗng** (đã tái hiện: 2 dòng × 3 cột toàn `[]`).
+
+Cách xử lý:
+- **File dùng ngay**: `CodeABAP/BDP_PCE/MIC_Long_text/BDP_Plan1000_InspPlan_CongThuc_SAP.xlsx` – tạo từ file gốc bằng script (đổi Target thành tương đối, đổi 1.438 ô `inlineStr` thành shared strings – 332 chuỗi duy nhất, thêm `sharedStrings.xml`, relationship và content-type). Nội dung ô, định dạng, filter giữ nguyên, đã so từng ô với bản gốc (giống hệt). Dòng 131 vẫn là `C7001` (chương trình sẽ báo lỗi dòng này).
+- **Chương trình**: thêm FORM `NORMALIZE_XLSX` + `INLINE_TO_SHARED`, gọi ngay sau khi upload; tự đổi Target tuyệt đối và ô `inlineStr` về dạng Excel lưu (file do Excel lưu không bị đổi gì; lỗi khi chuẩn hoá thì bỏ qua để class tự báo như cũ). Thuật toán đã kiểm trên DEV100 với file giả lập có xuống dòng trong ô, `&amp;`, `&lt;`, ô rỗng, ô số → đọc đúng 100%. Đã đẩy lên SAP DEV100 (active, giống file local 1.465 dòng).
+- Cách thủ công nếu gặp file khác lạ: mở trong Excel rồi Save.
