@@ -25,3 +25,6 @@ Số tiền VND lệch ×100 khi đọc thẳng từ DB (`TCURX-CURRDEC` của V
 
 ## Trạng thái file
 Hoàn chỉnh (chưa chạy): 6 bảng DDIC, `ZCX_ZALO`, `ZIF_ZALO_OBJECT`, `ZIF_ZALO_TYPES`, `ZCL_ZALO_CONFIG/HTTP/LOG/UTIL/OBJECT_BASE/FACTORY`, `ZCL_ZALO_ICF_HANDLER`, `ZFM_ZALO_SEND_RT`. Khung (chọn dữ liệu + dựng JSON chưa viết): 8 class luồng, `ZCL_ZALO_POD_API`, `ZSD_PG_ZALO` (chưa có ALV master-detail). Đã bỏ `ZCL_ZALO_PROMO_API` (ZL.11 ngoài phạm vi giai đoạn này).
+
+## Mã đối tượng (đổi ngày 04.11.2026)
+Fixed values domain `ZDO_ZALO_OBJ_TP` tối đa 10 ký tự (`DD07L-DOMVALUE_L`), nên 6 mã dài đã đổi: `BILLING_REVER`→`BILL_REV`, `CONGNO_BILL`→`CONGNO_HD`, `PAYMENT_HIS`→`PAY_HIS`, `DELIVERY_EMP`→`DELIV_EMP`, `FREIGHT_ORDER`→`FRT_ORDER`, `POD_CONFIRM`→`POD_CONF`; 4 mã giữ nguyên (`CUSTOMER`, `BILLING`, `CONGNO_KH`, `OD_PGI`). Đã cập nhật `ZIF_ZALO_OBJECT` và comment 6 class trên DEV100 (TR DEVK901153). Việc còn lại phía user: sửa 6 fixed values trong SE11 (TR DEVK900335), nhập 10 dòng `ZTB_ZALO_OBJECT`, dòng `ACTIVE_<mã>` trong `ZTB_ZALO_PARAM` dùng mã mới. Bảng đầy đủ: mục 12 (việc 6) của tài liệu thiết kế.
