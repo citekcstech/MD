@@ -56,7 +56,7 @@ RBKP đang **lệch DDIC ↔ DB** (DDIC active có `ZZ1_BUDGETDEPT_MIH`, DB chư
 1. ~~Dọn trigger~~ — xong, 0 trigger còn lại.
 2. ~~Gọi lại FM nếu time-out~~ — không cần.
 3. ~~Activate RBKP~~ — user làm trong SE14 lúc 23:17:14 (xem "Kết quả cuối").
-4. Soát các field Key User / bảng khác đã lỗi từ 13:45 (xem mục "Cần soát lại") — **chưa làm**.
+4. ~~Soát các field Key User / bảng khác đã lỗi từ 13:45~~ — đã làm, sạch (xem "Kết quả rà soát").
 
 ## Kết quả cuối (02.11.2026 ~23:20) — RBKP đã xử lý xong
 
@@ -64,6 +64,23 @@ RBKP đang **lệch DDIC ↔ DB** (DDIC active có `ZZ1_BUDGETDEPT_MIH`, DB chư
 - DDIC tự activate dây chuyền các structure include trực tiếp RBKP (10 structure): `MCRBHD` 23:17:42, `EDOC_RBKP` và `MCRBKP` 23:17:43, `WB2_RBKP` 23:17:44, `SAPI_LIV_HEADER`/`_CTRL` 23:17:56, `SAPI_LIV_ITEM` 23:17:57, `SAPI_LIV_ITEM_CTRL` 23:17:58, `WB2_ALV_IV_HEAD` 23:17:59, `WB2_IV_DATA` 23:18:00.
 - Dump cuối cùng liên quan: 23:17:53 `DDIC_TYPE_REF_ACCESS_ERROR` (CT.SD, client 200, `SAPLWB2_TEW_ACTION_SERVICE`: "WB2_IV_DATA refers to type WB2_RBKP — abap type or abap length inconsistent"). Nó rơi vào khoảng giữa `WB2_RBKP` (23:17:44) và `WB2_IV_DATA` (23:18:00) của đợt activate dây chuyền → thoáng qua. Không có dump RBKP nào sau đó.
 - Không thuộc lỗi này: append `ZAEKPO_INCL_EEW_PS_ANA` (CT.CSTECH) đang inactive (`AS4LOCAL = N`, 23:18:46) — việc khác của user.
+
+## Kết quả rà soát field Key User / bảng khác (02.11.2026 ~23:35) — không thấy bảng nào lỗi giống RBKP
+
+Khung giờ rà: từ 13:45 (lúc trigger được tạo) đến lúc kiểm. Chỉ đọc, không ghi gì.
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Hàng đợi chuyển đổi DB bị kẹt (`TBATG`) | Trống |
+| Field Key User tạo/sửa từ 01.11 (`CFD_W_REP`, theo `CREATED_ON`/`LAST_CHANGED_ON`) | Chỉ có **`ZZ1_BUDGETDEPT`** (chính field gây lỗi RBKP), không có field nào khác |
+| Field `ZZ1_*` trong bảng transparent: DDIC ↔ cột HANA (kể cả đi qua `INCLUDE`) | DDIC mong đợi 1.755 cặp bảng–cột, **thiếu 0** trong DB |
+| Object DDIC bị đổi từ 13:45 (162 object, `DD02L`) → 50 bảng transparent bị ảnh hưởng (kể cả qua include) | 1.655 field DDIC = 1.655 cột DB; **thiếu 0 cột, 0 bảng chưa có trong DB** |
+| Object DDIC đang inactive (`DD02L`, `DD04L`, từ 01.11) | Chỉ có append `ZAEKPO_INCL_EEW_PS_ANA` (CT.CSTECH, việc đang làm dở của user); data element: không có |
+| Dump từ lúc activate RBKP | Không có dump người dùng mới sau 23:17:53 |
+
+Giới hạn của phần rà này: chỉ so **tên** field DDIC với cột HANA cho bảng transparent; chưa so kiểu/độ dài, chưa kiểm view/CDS sinh lại, chưa kiểm nametab runtime (`DDNTT`) từng bảng. Khung giờ lấy theo giờ tạo trigger (13:45), nên thay đổi trước đó không nằm trong phạm vi.
+
+Ghi chú: lần chạy `ExecuteABAP` lúc 23:29:55 của tôi (`ZTEMP_EXEC_36988435`) tạo 1 dump `ITAB_DUPLICATE_KEY` trong ST22 dưới user CT.CSTECH do lỗi code kiểm tra của tôi (bảng sorted unique bị trùng khoá), không liên quan lỗi RBKP, không ghi gì vào DB. Hai lần chạy khác không compile nên không có kết quả.
 
 ## Ghi chú khác
 
