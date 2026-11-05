@@ -169,3 +169,14 @@
 5. Thiết bị: iOS hay Android, máy cá nhân hay máy chuyên dụng (Zebra…)?
 6. Mức độ chính xác chấp nhận và quy trình xác nhận khi app không chắc?
 7. Kết quả đọc dùng cho nghiệp vụ nào trong SAP (nhập kho, kiểm kê, xuất, đối soát)?
+
+---
+
+## 12. Demo app React Native (Android) đã dựng
+
+Vị trí code: `C:\CaNhan\QCM\VPN\BilletScanner` (xem `README.md` trong thư mục đó).
+
+- **Chức năng**: chọn ảnh từ thư viện (tối đa 10 ảnh) hoặc chụp mới → quét → hiện **danh sách mã** (gom nhóm, đếm số phôi) + ảnh có **khung đánh dấu** từng mã + mục debug xem văn bản OCR thô.
+- **Cách làm**: ảnh được xoay 0°/90°/180°/270° (`@bam.tech/react-native-image-resizer`) → OCR on-device (`@react-native-ml-kit/text-recognition`, phương án A ở mục 3) → trích mã bằng regex `2 số + 1 chữ + 4 số` có sửa nhầm ký tự theo vị trí → gộp các lần đọc trùng vị trí → gom nhóm, gợi ý sửa mã lẻ loi (vote trong cùng lô).
+- **Chưa có** (so với giải pháp đầy đủ): detector YOLO + OCR fine-tune, quét live/tracking, đối chiếu danh sách mã từ SAP, lưu lịch sử/đồng bộ.
+- **Dùng demo này để**: đo baseline phương án A trên ảnh thật (mục 9, giai đoạn POC). Nếu tỉ lệ đọc đúng toàn mã thấp → chuyển sang phương án B/C.
