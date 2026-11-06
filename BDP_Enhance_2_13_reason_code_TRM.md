@@ -150,3 +150,14 @@ Ghi chú cũ (trước khi sửa):
 2. `FTR_EDIT` mở lại → Reason code giữ nguyên; đổi 1 giá trị, lưu; nhập Reason code sai → báo lỗi.
 3. Kiểm bảng: `SELECT * FROM ztb_trm_rstgr` ở DEV300.
 4. `TBB1` post flow → `BSEG-RSTGR` của line 112* bằng `RunQuery` ở DEV300 (sau khi xong 7.3).
+
+## 10. Cập nhật 06.11.2026 (phản hồi test của Ngọc Phúc, deal `3000000001` client 300)
+
+**Lỗi**: chứng từ TBB1 nào cũng nhận Reason code của flow đầu. Dữ liệu thật: tab lưu đúng (1100→F53, 1120→F54, 1200→F04) nhưng 3 chứng từ `2615000000/1/2` đều có `RSTGR = F53`. Nguyên nhân: `TRACS_EXIT_FLOW-FLOW_NUMBER` (`TRDFLOWNR`) luôn = 1 ở mỗi chứng từ nên giả định "`FLOW_NUMBER` = `RFHAZB`" (mục 7.3) sai. `TRACT_ACCITEM-DIS_FLOWTYPE` của 3 chứng từ là `MM1100+`, `MM1120-`, `MM1200-`.
+
+**Sửa**:
+- `ZCL_IM_ENH_TPM_ACCIF_TRAC~ACCIT_EXIT` (request `DEVK901036`, marker `SangVT comment/modify begin/end 06.11.2026 13:53:07`; đoạn cũ comment lại): đọc `ZTB_TRM_RSTGR` theo (`COMPANY_CODE`, `DEAL_NUMBER`), chọn dòng có flow type nằm trong `DIS_FLOWTYPE` (`CS`), gán `ACCIT-RSTGR` cho dòng nợ/có có `HKONT` `112*`. Đã kiểm logic bằng dữ liệu của deal: `MM1100+`→F53, `MM1120-`→F54, `MM1200-`→F04, flow lạ→trống.
+- Tab Reason code (dynpro mới **0200**, 4 cột): Flow type | **Tên Flow type** (mờ, `TZB0T` theo `RANTYP` của deal) | Reason code (nhập) | **Tên Reason code** (mờ, `T053S`). F4 Reason code = danh sách giá trị (mã + tên) của công ty trong deal từ `T053R`/`T053S` (`F4IF_INT_TABLE_VALUE_REQUEST`), thay cho search help chuẩn `H_T053R`. Dynpro 0100 cũ còn tồn tại nhưng không dùng nữa (xóa tay ở SE80 nếu muốn).
+- Class `ZCL_TRM_RSTGR`: thêm `flow_text`/`rstgr_text` vào dòng, `GET_REASON_VALUES`, cache `T053R`/`T053S` theo công ty; `CHECK` dùng chính danh sách này.
+
+**Cần Phúc làm khi test lại**: thoát hẳn `TM_52`/`FTR_EDIT` rồi mở lại; 3 chứng từ cũ đã sai F53 nên cần reverse + post lại (hoặc test deal khác, vd `3000000010` client 200 đã có đủ 3 mã), rồi kiểm `BSEG-RSTGR` line `112*` của từng chứng từ.
